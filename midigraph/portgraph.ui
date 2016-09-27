@@ -224,7 +224,7 @@
              <item row="2" column="0">
               <layout class="QHBoxLayout" name="horizontalLayout_4">
                <item>
-                <widget class="QLabel" name="label_2">
+                <widget class="QLabel" name="output_port_id_lbl">
                  <property name="text">
                   <string>Port ID:</string>
                  </property>
@@ -244,7 +244,7 @@
                 </widget>
                </item>
                <item>
-                <widget class="QLabel" name="label_4">
+                <widget class="QLabel" name="output_port_name_lbl">
                  <property name="text">
                   <string>Name:</string>
                  </property>
@@ -348,7 +348,7 @@
              <item row="2" column="0">
               <layout class="QHBoxLayout" name="horizontalLayout_6">
                <item>
-                <widget class="QLabel" name="label_7">
+                <widget class="QLabel" name="input_port_id_lbl">
                  <property name="text">
                   <string>Port ID:</string>
                  </property>
@@ -368,7 +368,7 @@
                 </widget>
                </item>
                <item>
-                <widget class="QLabel" name="label_8">
+                <widget class="QLabel" name="input_port_name_lbl">
                  <property name="text">
                   <string>Name:</string>
                  </property>

@@ -75,6 +75,11 @@ port_cap_tooltip = {
                     'SYNC_WRITE': 'This port can receive connection notifications (allow write subscriptions).', 
                     }
 
+client_types = {
+                1: 'Software', 
+                2: 'Hardware', 
+                }
+
 class AlsaMidi(QtCore.QObject):
     client_start = QtCore.pyqtSignal(object)
     client_exit = QtCore.pyqtSignal(object)
@@ -286,6 +291,7 @@ class PortGraph(QtGui.QMainWindow):
         self.output_tree.setItemDelegate(IdItem())
         self.output_tree.mouseMoveEvent = lambda e: self.tree_mouseMove(self.output_tree, e)
         self.output_tree.leaveEvent = lambda e: self.tree_leaveEvent(self.output_tree, e)
+        self.output_tree.viewportEvent = lambda e: self.tree_event(self.output_tree, e)
 
         self.input_tree = QtGui.QTreeView(self)
         self.input_tree.setVerticalScrollMode(QtGui.QTreeView.ScrollPerPixel)
@@ -629,7 +635,14 @@ class PortGraph(QtGui.QMainWindow):
                 port_item.setData(port, PortRole)
                 port_item.setData(port.id, IdRole)
                 port_item.setData(True, VisibleRole)
+                tooltip = '<b>Name</b>: {n}<br/><b>Address</b>: {cid}:{pid}<br/><b>Client</b>: {c}<br/>'.format(n=port.name, cid=port.client.id, pid=port.id, c=port.client.name)
+                types = [port_type_to_str[int(p)] for p in port.type]
+                types = ', '.join(types) if types else '(none)'
+                port_item.setData(tooltip, QtCore.Qt.ToolTipRole)
                 if port.is_duplex:
+                    tooltip += '<b>Duplex port</b><br/><b>Type</b>: '
+                    tooltip += types
+                    port_item.setData(tooltip, QtCore.Qt.ToolTipRole)
                     self.output_items[port] = port_item
                     outputs.append(port_item)
                     twin_item = QtGui.QStandardItem(port.name)
@@ -638,11 +651,16 @@ class PortGraph(QtGui.QMainWindow):
                     twin_item.setData(port.id, IdRole)
                     twin_item.setData(True, VisibleRole)
                     inputs.append(twin_item)
+                    twin_item.setData(tooltip, QtCore.Qt.ToolTipRole)
                     self.input_items[port] = twin_item
                 elif port.is_output:
+                    tooltip += '<b>Type</b>: ' + types
+                    port_item.setData(tooltip, QtCore.Qt.ToolTipRole)
                     self.output_items[port] = port_item
                     outputs.append(port_item)
                 elif port.is_input:
+                    tooltip += '<b>Type</b>: ' + types
+                    port_item.setData(tooltip, QtCore.Qt.ToolTipRole)
                     self.input_items[port] = port_item
                     inputs.append(port_item)
                 else:
@@ -655,7 +673,14 @@ class PortGraph(QtGui.QMainWindow):
                 client_item.setData(client_icon(client), QtCore.Qt.DecorationRole)
                 self.output_client_items[client] = client_item
                 self.output_model.appendRow(client_item)
-                [client_item.appendRow(i) for i in outputs]
+                tooltip = '<b>Name</b>: {n}<br/><b>ID</b>: {i}<br/><b>Type</b>: {t}<br/><b>Ports</b>:<br/>'.format(n=client.name, i=client.id, t=client_types[int(client.type)])
+                port_txt = []
+                for port_item in outputs:
+                    client_item.appendRow(port_item)
+                    port = port_item.data(PortRole).toPyObject()
+                    port_txt.append(' &nbsp;{}: {}{}'.format(port.id, port.name, ' (hidden)' if port.hidden else ''))
+                tooltip += '<br/>'.join(port_txt)
+                client_item.setData(tooltip, QtCore.Qt.ToolTipRole)
             if inputs:
                 client_item = QtGui.QStandardItem('{}'.format(client.name))
                 client_item.setData(client, ClientRole)
@@ -664,7 +689,14 @@ class PortGraph(QtGui.QMainWindow):
                 client_item.setData(client_icon(client), QtCore.Qt.DecorationRole)
                 self.input_client_items[client] = client_item
                 self.input_model.appendRow(client_item)
-                [client_item.appendRow(i) for i in inputs]
+                tooltip = '<b>Name</b>: {n}<br/><b>ID</b>: {i}<br/><b>Type</b>: {t}<br/><b>Ports</b>:<br/>'.format(n=client.name, i=client.id, t=client_types[int(client.type)])
+                port_txt = []
+                for port_item in inputs:
+                    client_item.appendRow(port_item)
+                    port = port_item.data(PortRole).toPyObject()
+                    port_txt.append(' &nbsp;{}: {}{}'.format(port.id, port.name, ' (hidden)' if port.hidden else ''))
+                tooltip += '<br/>'.join(port_txt)
+                client_item.setData(tooltip, QtCore.Qt.ToolTipRole)
         self.output_model.dataChanged.connect(self.visible_changed)
         self.input_model.dataChanged.connect(self.visible_changed)
         for port in set(self.input_items.keys()+self.output_items.keys()):
@@ -745,7 +777,9 @@ class PortGraph(QtGui.QMainWindow):
             cid_edit = self.output_client_id_edit
             cname_edit = self.output_client_name_edit
             pid_edit = self.output_port_id_edit
+            pid_lbl = self.output_port_id_lbl
             pname_edit = self.output_port_name_edit
+            pname_lbl = self.output_port_name_lbl
             type_group = self.port_type_output_btngroup
             cap_group = self.port_cap_output_btngroup
             client_group = self.client_type_output_btngroup
@@ -760,7 +794,9 @@ class PortGraph(QtGui.QMainWindow):
             cid_edit = self.input_client_id_edit
             cname_edit = self.input_client_name_edit
             pid_edit = self.input_port_id_edit
+            pid_lbl = self.input_port_id_lbl
             pname_edit = self.input_port_name_edit
+            pname_lbl = self.input_port_name_lbl
             type_group = self.port_type_input_btngroup
             cap_group = self.port_cap_input_btngroup
             client_group = self.client_type_input_btngroup
@@ -779,8 +815,10 @@ class PortGraph(QtGui.QMainWindow):
             cname_edit.setText(client.name)
             pid_edit.setText('')
             pid_edit.setEnabled(False)
+            pid_lbl.setEnabled(False)
             pname_edit.setText('')
             pname_edit.setEnabled(False)
+            pname_lbl.setEnabled(False)
             conn_table.clear()
             conn_table.setColumnCount(0)
         else:
@@ -793,8 +831,10 @@ class PortGraph(QtGui.QMainWindow):
             cname_edit.setText(client.name)
             pid_edit.setText(str(port.id))
             pid_edit.setEnabled(True)
+            pid_lbl.setEnabled(True)
             pname_edit.setText(port.name)
             pname_edit.setEnabled(True)
+            pname_lbl.setEnabled(True)
             for cap in port.caps:
                 cap_group.button(cap).setChecked(True)
             for t in port.type:
