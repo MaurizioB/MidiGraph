@@ -180,6 +180,9 @@
                    <height>16777215</height>
                   </size>
                  </property>
+                 <property name="alignment">
+                  <set>Qt::AlignCenter</set>
+                 </property>
                  <property name="readOnly">
                   <bool>true</bool>
                  </property>
@@ -225,6 +228,9 @@
               <layout class="QHBoxLayout" name="horizontalLayout_4">
                <item>
                 <widget class="QLabel" name="output_port_id_lbl">
+                 <property name="enabled">
+                  <bool>false</bool>
+                 </property>
                  <property name="text">
                   <string>Port ID:</string>
                  </property>
@@ -232,11 +238,17 @@
                </item>
                <item>
                 <widget class="QLineEdit" name="output_port_id_edit">
+                 <property name="enabled">
+                  <bool>false</bool>
+                 </property>
                  <property name="maximumSize">
                   <size>
                    <width>32</width>
                    <height>16777215</height>
                   </size>
+                 </property>
+                 <property name="alignment">
+                  <set>Qt::AlignCenter</set>
                  </property>
                  <property name="readOnly">
                   <bool>true</bool>
@@ -245,6 +257,9 @@
                </item>
                <item>
                 <widget class="QLabel" name="output_port_name_lbl">
+                 <property name="enabled">
+                  <bool>false</bool>
+                 </property>
                  <property name="text">
                   <string>Name:</string>
                  </property>
@@ -252,6 +267,9 @@
                </item>
                <item>
                 <widget class="QLineEdit" name="output_port_name_edit">
+                 <property name="enabled">
+                  <bool>false</bool>
+                 </property>
                  <property name="readOnly">
                   <bool>true</bool>
                  </property>
@@ -304,6 +322,9 @@
                    <height>16777215</height>
                   </size>
                  </property>
+                 <property name="alignment">
+                  <set>Qt::AlignCenter</set>
+                 </property>
                  <property name="readOnly">
                   <bool>true</bool>
                  </property>
@@ -349,6 +370,9 @@
               <layout class="QHBoxLayout" name="horizontalLayout_6">
                <item>
                 <widget class="QLabel" name="input_port_id_lbl">
+                 <property name="enabled">
+                  <bool>false</bool>
+                 </property>
                  <property name="text">
                   <string>Port ID:</string>
                  </property>
@@ -356,11 +380,17 @@
                </item>
                <item>
                 <widget class="QLineEdit" name="input_port_id_edit">
+                 <property name="enabled">
+                  <bool>false</bool>
+                 </property>
                  <property name="maximumSize">
                   <size>
                    <width>32</width>
                    <height>16777215</height>
                   </size>
+                 </property>
+                 <property name="alignment">
+                  <set>Qt::AlignCenter</set>
                  </property>
                  <property name="readOnly">
                   <bool>true</bool>
@@ -369,6 +399,9 @@
                </item>
                <item>
                 <widget class="QLabel" name="input_port_name_lbl">
+                 <property name="enabled">
+                  <bool>false</bool>
+                 </property>
                  <property name="text">
                   <string>Name:</string>
                  </property>
@@ -376,6 +409,9 @@
                </item>
                <item>
                 <widget class="QLineEdit" name="input_port_name_edit">
+                 <property name="enabled">
+                  <bool>false</bool>
+                 </property>
                  <property name="readOnly">
                   <bool>true</bool>
                  </property>
