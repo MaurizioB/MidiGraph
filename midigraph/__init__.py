@@ -40,6 +40,23 @@ port_type_checks = [
                     ('SPECIFIC', 'SYNTH'), 
                     ]
 port_type_to_str = {bit:str(value)[14:] for bit, value in alsaseq._dporttype.items()}
+port_type_tooltip = {
+                     'PORT': 'This port may connect to other devices (whose characteristics are not known).', 
+                     'HARDWARE': 'This port is implemented in hardware.', 
+                     'SOFTWARE': 'This port is implemented in software.', 
+                     'APPLICATION': 'This port belongs to an application, such as a sequencer or editor.', 
+                     'MIDI_GENERIC': 'This port understands MIDI messages.', 
+                     'MIDI_GM': 'This port is compatible with the General MIDI specification.', 
+                     'MIDI_GM2': 'This port is compatible with the General MIDI 2 specification.', 
+                     'MIDI_GS': 'This port is compatible with the Roland GS standard.', 
+                     'MIDI_MT32': 'This port is compatible with the Roland MT-32.', 
+                     'MIDI_XG': 'This port is compatible with the Yamaha XG specification.', 
+                     'SYNTHESIZER': 'Messages sent to this port will generate sounds.', 
+                     'SAMPLE': 'Instruments can be downloaded to this port (with SND_SEQ_EVENT_INSTR_xxx messages sent directly or through a queue).', 
+                     'DIRECT_SAMPLE': 'Instruments can be downloaded to this port (with SND_SEQ_EVENT_INSTR_xxx messages sent directly).', 
+                     'SPECIFIC': 'Messages sent from/to this port have device-specific semantics.', 
+                     'SYNTH': 'This port understands SND_SEQ_EVENT_SAMPLE_xxx messages (these are not MIDI messages).', 
+                     }
 
 port_cap_checks = [
                    ('DUPLEX', 'NO_EXPORT'),
@@ -47,6 +64,16 @@ port_cap_checks = [
                    ('WRITE', 'SUBS_WRITE', 'SYNC_WRITE'), 
                    ]
 port_cap_to_str = {bit:str(value)[13:] for bit, value in alsaseq._dportcap.items()}
+port_cap_tooltip = {
+                    'DUPLEX': 'This port is both for output and input (allow read/write).', 
+                    'NO_EXPORT': 'This port does not allow routing.', 
+                    'READ': 'This is an output port (readable from this port).', 
+                    'SUBS_READ': 'This port will notify connections (allow read subscriptions).', 
+                    'SYNC_READ': 'This port will notify connections (allow read subscriptions).', 
+                    'WRITE': 'This in an input port (writable to this port).', 
+                    'SUBS_WRITE': 'This port can receive connection notifications (allow write subscriptions).', 
+                    'SYNC_WRITE': 'This port can receive connection notifications (allow write subscriptions).', 
+                    }
 
 class AlsaMidi(QtCore.QObject):
     client_start = QtCore.pyqtSignal(object)
@@ -144,15 +171,12 @@ class ConnectionWidget(QtGui.QWidget):
         qp.end()
 
     def drawConn(self, event, qp):
-#        qp.setPen(QtCore.Qt.black)
         for conn in self.connections:
             src = self.output_items[conn.src]
             client_src = self.output_client_items[conn.src.client]
             dest = self.input_items[conn.dest]
             client_dest = self.input_client_items[conn.dest.client]
             if not all([i.data(VisibleRole).toPyObject() for i in [client_src, client_dest, src, dest]]): continue
-
-#            print self.highlight_conn
             if conn in self.main.highlight_conn:
                 pen = QtGui.QPen(QtCore.Qt.red)
                 qp.setPen(pen)
@@ -251,11 +275,9 @@ class PortGraph(QtGui.QMainWindow):
     def __init__(self):
         QtGui.QMainWindow.__init__(self)
         _load_ui(self, 'portgraph.ui')
-        self.realized = False
 
         self.output_tree = QtGui.QTreeView(self)
         self.output_tree.setVerticalScrollMode(QtGui.QTreeView.ScrollPerPixel)
-        self.output_tree.setHeaderHidden(True)
         self.output_tree.setAlternatingRowColors(True)
         self.output_tree.setEditTriggers(QtGui.QTreeView.NoEditTriggers)
         self.output_tree.setMouseTracking(True)
@@ -267,7 +289,6 @@ class PortGraph(QtGui.QMainWindow):
 
         self.input_tree = QtGui.QTreeView(self)
         self.input_tree.setVerticalScrollMode(QtGui.QTreeView.ScrollPerPixel)
-        self.input_tree.setHeaderHidden(True)
         self.input_tree.setAlternatingRowColors(True)
         self.input_tree.setEditTriggers(QtGui.QTreeView.NoEditTriggers)
         self.input_tree.setMouseTracking(True)
@@ -316,6 +337,7 @@ class PortGraph(QtGui.QMainWindow):
                     check = QtGui.QCheckBox(txt.replace('_', ' '))
                     check.mousePressEvent = self.disable_check
                     check.keyPressEvent = self.disable_check
+                    check.setToolTip(port_type_tooltip[txt])
                     check.setVisible(False)
                     layout.addWidget(check, row+1, col)
                     group.addButton(check, btn_id)
@@ -343,6 +365,7 @@ class PortGraph(QtGui.QMainWindow):
                     check = QtGui.QCheckBox(txt.replace('_', ' '))
                     check.mousePressEvent = self.disable_check
                     check.keyPressEvent = self.disable_check
+                    check.setToolTip(port_cap_tooltip[txt])
                     check.setVisible(False)
                     layout.addWidget(check, row+1, col)
                     group.addButton(check, btn_id)
@@ -365,6 +388,7 @@ class PortGraph(QtGui.QMainWindow):
         self.connections = ConnectionWidget(self)
         self.connections.setMinimumWidth(40)
         self.views = QtGui.QSplitter(QtCore.Qt.Horizontal)
+        self.views.setChildrenCollapsible(False)
         self.views.sizePolicy().setVerticalPolicy(QtGui.QSizePolicy.Expanding)
         self.views.setMinimumHeight(80)
         self.views.addWidget(self.output_tree)
@@ -383,6 +407,17 @@ class PortGraph(QtGui.QMainWindow):
         self.toolBar.addSeparator()
         self.toolBar.addWidget(self.system_chk)
         self.toolBar.addWidget(self.noexport_chk)
+        spacer = QtGui.QWidget()
+        spacer.setMinimumWidth(20)
+        spacer.setSizePolicy(QtGui.QSizePolicy.Expanding, QtGui.QSizePolicy.Expanding)
+        self.toolBar.addWidget(spacer)
+        popup = QtGui.QToolButton(self.toolBar)
+        popup.setText('About... ')
+        popup.setPopupMode(QtGui.QToolButton.InstantPopup)
+        popup.setToolButtonStyle(QtCore.Qt.ToolButtonTextOnly)
+        popup.setMenu(self.menu())
+        self.toolBar.addWidget(popup)
+        
 
         self.hw_show = self.sw_show = True
         self.system_chk.toggled.connect(self.system_show_set)
@@ -402,8 +437,9 @@ class PortGraph(QtGui.QMainWindow):
         self.output_conn_table.itemDoubleClicked.connect(lambda i=i, pd=self.input_items: self.conn_select(i, pd))
         self.input_conn_table.itemDoubleClicked.connect(lambda i=i, pd=self.output_items: self.conn_select(i, pd))
 
-        self.eventFilter = self.splitterEvFilter
+#        self.eventFilter = self.splitterEvFilter
         self.splitter.setChildrenCollapsible(False)
+        self.toolBar.installEventFilter(self)
         self.splitter.handle(1).installEventFilter(self)
         self.splitter.handle(2).installEventFilter(self)
         self.splitter_sizes = list(self.splitter.sizes())
@@ -417,6 +453,28 @@ class PortGraph(QtGui.QMainWindow):
         self.conn_groups = [self.output_conn_group, self.input_conn_group]
         self.conn_switch.clicked.connect(lambda state: [self.conn_switch.hide(), [w.show() for w in self.conn_groups]])
 
+    def menu(self):
+        def about():
+            title = 'About MidiGraph'
+            msg = ('''
+                   <b>MidiGraph</b><br/>
+                   a Midi graph inspector for GNU/Linux<br/>
+                   written by Maurizio Berti<br/><br/>
+                   Project repository:
+                   <a href="https://github.com/MaurizioB/MidiGraph">GitHub</a><br/>
+                   <br/>
+                   client icons from Crystal KDE theme<br/>
+                   by Everaldo Coelho
+                   </center>
+                   ''')
+            return QtGui.QMessageBox.about(self, title, msg)
+        menu = QtGui.QMenu()
+        about_action = QtGui.QAction('About MidiPortGraph...', self)
+        about_action.triggered.connect(about)
+        about_qt = QtGui.QAction('About Qt...', self)
+        about_qt.triggered.connect(lambda state: QtGui.QMessageBox.aboutQt(self))
+        menu.addActions([about_action, about_qt])
+        return menu
 
     def splitterMoved(self, pos, index):
         return
@@ -445,7 +503,9 @@ class PortGraph(QtGui.QMainWindow):
             for w in self.conn_groups:
                 w.hide()
 
-    def splitterEvFilter(self, source, event):
+    def eventFilter(self, source, event):
+        if event.type() == QtCore.QEvent.ContextMenu:
+            return True
         if event.type() == QtCore.QEvent.MouseButtonDblClick:
             if source == self.splitter.handle(1):
                 if not self.spec_switch.isVisible:
@@ -453,17 +513,14 @@ class PortGraph(QtGui.QMainWindow):
         if event.type() == QtCore.QEvent.MouseMove:
             if source == self.splitter.handle(1):
                 if event.pos().y() < -self.splitter.handleWidth():
-                    if self.spec_switch.isVisible():
-                        self.spec_groups_visible()
-                    elif self.conn_switch.isVisible():
+                    if self.conn_switch.isVisible() and not self.spec_switch.isVisible():
                         self.conn_groups_visible()
+                    elif self.spec_switch.isVisible():
+                        self.spec_groups_visible()
                 if event.pos().y() > self.spec_layout.geometry().height():
                     if not self.spec_switch.isVisible():
-                        if not self.spec_switch.isVisible():
-                            self.spec_groups_visible(False)
-                        else:
-                            self.conn_groups_visible(False)
-                    else:
+                        self.spec_groups_visible(False)
+                    elif event.pos().y() > self.spec_layout.geometry().height()+self.input_conn_group.geometry().height():
                         self.conn_groups_visible(False)
             else:
                 if self.conn_switch.isVisible() and event.pos().y() < -self.splitter.handleWidth():
@@ -553,8 +610,10 @@ class PortGraph(QtGui.QMainWindow):
         self.connection_group.hide()
         self.highlight_conn = []
         self.output_model = QtGui.QStandardItemModel()
+        self.output_model.setHorizontalHeaderLabels(['Output/readable clients'])
         self.output_tree.setModel(self.output_model)
         self.input_model = QtGui.QStandardItemModel()
+        self.input_model.setHorizontalHeaderLabels(['Input/writable clients'])
         self.input_tree.setModel(self.input_model)
         self.output_items = {}
         self.output_client_items = {}
@@ -745,7 +804,10 @@ class PortGraph(QtGui.QMainWindow):
             conn_list = sorted(conn_list, key=lambda c: (getattr(c, other).client.id, getattr(c, other).id))
             conn_table.setColumnCount(5)
             conn_table.setRowCount(len(conn_list))
-            conn_table.setHorizontalHeaderLabels(['Port', 'Excl', 'Queue', 'Real', 'Upd'])
+            conn_table.setHorizontalHeaderLabels(['Port', 'Excl', 'Que', 'Real', 'Upd'])
+            for c in range(1, 5):
+                conn_table.horizontalHeader().setResizeMode(c, QtGui.QHeaderView.Fixed)
+            conn_table.horizontalHeader().setResizeMode(0, QtGui.QHeaderView.Stretch)
             conn_table.verticalHeader().setResizeMode(QtGui.QHeaderView.Fixed)
             for row, conn in enumerate(conn_list):
                 port = getattr(conn, other)
@@ -753,10 +815,16 @@ class PortGraph(QtGui.QMainWindow):
                 item.setData(PortRole, port)
                 conn_table.setItem(row, 0, item)
                 for c, key in enumerate(['exclusive', 'queue', 'time_real', 'time_update']):
-                    item = QtGui.QTableWidgetItem()
-                    item.setFlags(item.flags() ^ QtCore.Qt.ItemIsUserCheckable)
-                    item.setCheckState(2 if conn.info[key] else 0)
-                    conn_table.setItem(row, 1+c, item)
+                    widget = QtGui.QWidget()
+                    check = QtGui.QCheckBox()
+                    check.setChecked(True if conn.info[key] else False)
+                    check.mousePressEvent = self.disable_check
+                    check.keyPressEvent = self.disable_check
+                    layout = QtGui.QHBoxLayout()
+                    layout.setAlignment(QtCore.Qt.AlignHCenter)
+                    widget.setLayout(layout)
+                    layout.addWidget(check)
+                    conn_table.setCellWidget(row, 1+c, widget)
             conn_table.resizeColumnsToContents()
             conn_table.resizeRowsToContents()
             w = max([conn_table.columnWidth(c) for c in range(1, 5)])
@@ -789,7 +857,6 @@ class PortGraph(QtGui.QMainWindow):
         self.connection_group.setEnabled(True)
         if not self.spec_switch.isVisible():
             self.connection_group.show()
-        print 'conn info: {}'.format(conn.info)
         for k, v in conn.info.items():
             getattr(self, 'conn_{}_chk'.format(k)).setChecked(True if v else False)
 
@@ -807,21 +874,23 @@ class PortGraph(QtGui.QMainWindow):
         tree.selectionModel().setCurrentIndex(index, QtGui.QItemSelectionModel.Select)
 
     def alsa_client_start(self, *args):
-        print args
+        pass
 
     def alsa_client_exit(self, *args):
-        print args
+        pass
 
     def alsa_port_start(self, port):
         def create_client(client, client_dict, client_model):
-                client_item = QtGui.QStandardItem('{}'.format(client.name))
-                client_item.setData(client, ClientRole)
-                client_item.setData(client.id, IdRole)
-                client_item.setData(True, VisibleRole)
-                client_item.setData(client_icon(client), QtCore.Qt.DecorationRole)
-                client_dict[client] = client_item
-                client_model.appendRow(client_item)
-                return client_item
+            client_item = client_dict.get(client)
+            if client_item: return client_item
+            client_item = QtGui.QStandardItem('{}'.format(client.name))
+            client_item.setData(client, ClientRole)
+            client_item.setData(client.id, IdRole)
+            client_item.setData(True, VisibleRole)
+            client_item.setData(client_icon(client), QtCore.Qt.DecorationRole)
+            client_dict[client] = client_item
+            client_model.appendRow(client_item)
+            return client_item
 
         if alsaseq.SEQ_PORT_CAP_NO_EXPORT in port.caps and self.noexport_chk.isChecked():
             visible = False
